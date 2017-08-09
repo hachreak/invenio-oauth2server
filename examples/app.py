@@ -33,16 +33,15 @@ Run example development server:
 
    $ pip install -e .[all]
    $ cd examples
-   $ cd examples
    $ ./app-setup.sh
    $ ./app-fixtures.sh
-   $ FLASK_APP=app.py flask run
+   $ FLASK_APP=app.py flask run -p 5000
 
 Open the admin page to generate a token:
 
 .. code-block:: console
 
-   $ open http://0.0.0.0:5000/account/settings/applications
+   $ open http://localhost:5000/account/settings/applications
 
 Make a login with:
 
@@ -58,14 +57,14 @@ Make a request to test the token:
 .. code-block:: console
 
     export TOKEN=<generated Access Token>
-    curl -i -X GET -H "Content-Type:application/json" http://0.0.0.0:5000/ \
+    curl -i -X GET -H "Content-Type:application/json" http://localhost:5000/ \
         -H "Authorization:Bearer $TOKEN"
 
 Or, if you are logged in through the browser, try to open the homepage with it:
 
 .. code-block:: console
 
-   $ open http://0.0.0.0:5000/jwt
+   $ open http://localhost:5000/jwt
 
 SPHINX-END
 """
@@ -96,11 +95,13 @@ from invenio_oauth2server.views import server_blueprint, settings_blueprint
 # Create Flask application
 app = Flask(__name__)
 app.config.update(
+    APP_ENABLE_SECURE_HEADERS=False,
     CELERY_ALWAYS_EAGER=True,
     CELERY_CACHE_BACKEND='memory',
     CELERY_EAGER_PROPAGATES_EXCEPTIONS=True,
     CELERY_RESULT_BACKEND='cache',
-    OAUTH2SERVER_CACHE_TYPE='simple',
+    DEBUG=True,
+    OAUTH2_CACHE_TYPE='simple',
     OAUTHLIB_INSECURE_TRANSPORT=True,
     TESTING=True,
     SECRET_KEY='test_key',
@@ -138,7 +139,9 @@ app.register_blueprint(blueprint_admin_ui)
 
 with app.app_context():
     # Register a test scope
-    current_oauth2server.register_scope(Scope('test:scope'))
+    current_oauth2server.register_scope(
+        Scope('test:scope', help_text='Access to the homepage',
+              group='test'))
 
 
 @app.route('/jwt', methods=['GET'])
